@@ -4,6 +4,7 @@ const app=express();
 var mongoose=require("mongoose")
 var mongo=require("mongodb");
 var clients = require('./schema.js')
+var request = require('request');
 var cron = require("node-cron")
 var redis = require("redis");
 
@@ -113,7 +114,16 @@ cron.schedule('* * * * *',() =>
     {
         result.forEach(ele =>
         {
-            console.log("res ="+ele);
+            try{
+                request(ele,(err,res) =>
+                {
+                    console.log("success "+res.statusCode);
+                });
+            }
+            catch{
+                console.log("failed");
+            }
+            
         })
         
     })
