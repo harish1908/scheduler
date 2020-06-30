@@ -31,8 +31,7 @@ db.once('open', function(callback){
 
 
 //getting the current time
-var date = new Date();
-var timenow = date.getTime()/60
+
 
 
 app.use(bodyparser.json());
@@ -53,16 +52,22 @@ app.post('/sub',function(req,res)
     var temp = req.body.time;
     var date = req.body.date;
      temp = date+" "+temp;
-     console.log(temp);
     var date2 = new Date(temp)
-    var time2 = date2.getTime()/60
-    var data ={
+    var time2 = date2.getTime()/60000;
+    time2 = Math.floor(time2);
+    console.log(time2);
+    var data = {
         user_id: req.body.user_id,
         url:req.body.url,
         create_time:req.body.create_time,
-        time : time2,
+        execution_time : time2,
         verb : req.body.verb,
-        create_time : timenow   
+        time : req.body.time,
+        date : req.body.date, 
+        modified_time : req.body.create_time,
+        created_by : req.body.user_id,
+        response : null,
+
             }
 
     db.collection('clients').insertOne(data, function(err,succes)
@@ -76,21 +81,21 @@ app.post('/sub',function(req,res)
   }});
 })
 
+
 //1st cron which will run in 15 minute interval
 cron.schedule('0,15,30,45 * * * *',() =>
 {
-        console.log("hello");
-        db.collection("clients").find({ "time": {$gt:new Date().getTime()/60, $lt:(new Date().getTime()/60)+(15*60)}}).toArray(function(err, result) {
+        console.log("first cron");
+        db.collection("clients").find({ "execution_time": {$gt:new Date().getTime()/60000, $lt:(new Date().getTime()/60000)+15}}).toArray(function(err, result) {
             if (err) throw err;
-           // console.log(result);
            result.forEach(ele =>
             {
-                client.set(ele.time,ele.url,() =>
+                client.lpush(ele.execution_time.toString(),ele.url, () =>
                 {
-                    console.log(ele.time);
+                    console.log("data inserted in list");
                 });
-                
             })
+            
           });
           
 
@@ -98,9 +103,22 @@ cron.schedule('0,15,30,45 * * * *',() =>
 cron.schedule('* * * * *',() =>
 {
     console.log("second cron");
-    
-
-})
+    var now = new Date().getTime()/60000;
+    now = Math.floor(now);
+    console.log(now);
+    client.llen(now.toString(),(err,res)=>
+        {
+     if(res!=0){
+    client.lrange(now.toString(),0,res-1,(err,result)=>
+    {
+        result.forEach(ele =>
+        {
+            console.log("res ="+ele);
+        })
+        
+    })
+ }})
+});
 
 
 

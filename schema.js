@@ -1,4 +1,7 @@
 var mongoose = require('mongoose');
+const { time, timeStamp } = require('console');
+const { Timestamp } = require('bson');
+const { timeAt } = require('tz-offset');
 
 var schema = new mongoose.Schema({
     id : {
@@ -43,7 +46,7 @@ var schema = new mongoose.Schema({
     create_time :
     {
         type: Date,
-        default : Date.now
+        default : new Date()
     },
 
     modified_by : {
@@ -56,10 +59,14 @@ var schema = new mongoose.Schema({
         default : null
     },
 
-    time : { type : Date, default: Date.now },
+    execution_time : { type :  Date },
     
-    Interval : {
-        type : Number
+    date : {
+        type : Date
+    },
+
+    time : {
+        type : Date
     }
 });
 
