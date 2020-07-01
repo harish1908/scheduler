@@ -45,6 +45,7 @@ app.listen(port, () => {
     console.log("server on")
 });
 
+var chrontime=0;
 
 //api to post the data in db
 app.post('/sub',function(req,res)
@@ -65,11 +66,28 @@ app.post('/sub',function(req,res)
         verb : req.body.verb,
         time : req.body.time,
         date : req.body.date, 
+        body : req.body.body,
         modified_time : req.body.create_time,
         created_by : req.body.user_id,
         response : null,
 
             }
+            if(chrontime==0)
+            {
+                client.lpush(time2.toString(),data.url, () =>
+                {
+                    console.log("data inserted in list");
+                });
+            }
+            else{
+            if(time2<=chrontime+15)
+            {
+                client.lpush(time2.toString(),data.url, () =>
+                {
+                    console.log("data inserted in list");
+                });
+            }
+        }
 
     db.collection('clients').insertOne(data, function(err,succes)
    {
@@ -86,6 +104,9 @@ app.post('/sub',function(req,res)
 //1st cron which will run in 15 minute interval
 cron.schedule('0,15,30,45 * * * *',() =>
 {
+    var time =new Date().getTime()/60000;
+    time =Math.floor(time);
+    chrontime=time;
         console.log("first cron");
         db.collection("clients").find({ "execution_time": {$gt:new Date().getTime()/60000, $lt:(new Date().getTime()/60000)+15}}).toArray(function(err, result) {
             if (err) throw err;
