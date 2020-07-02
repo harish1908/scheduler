@@ -57,9 +57,12 @@ app.post('/sub',function(req,res)
     var temp = req.body.time;
     var date = req.body.date;
      temp = date+" "+temp;
+     var timval = /(?:[01]\d|2[0123]):(?:[012345]\d):(?:[012345]\d)/gm;
      var regEx = /^\d{4}-\d{2}-\d{2}$/;
      if(!date.match(regEx)) 
-     res.send(" input the correct format date yyyy-mm-dd && time hh:mm:ss");
+     res.send(" input the correct format date yyyy-mm-dd");
+     if(!temp.match(timval)) 
+     res.send(" input the correct format  time hh:mm:ss");
     else{
     var date2 = new Date(temp)
     var time2 = date2.getTime()/60000;
@@ -83,7 +86,7 @@ app.post('/sub',function(req,res)
             }
             var timenow =new Date().getTime()/60000;
             timenow =Math.floor(timenow);
-            if(time2-timenow===1 || time2-timenow ===0)
+            if(time2-timenow <=1)
             {
                 data_url ={
                     method : data.verb,
@@ -117,19 +120,21 @@ app.post('/sub',function(req,res)
                 }
             }
             else{
-            if(chrontime===0)
+            if(chrontime==0)
             {
                 data_url ={
                     method : data.verb,
                     url : data.url,
                     header : data.Header,
-                    body : data.body
+                    body : data.body,
+                    user_id: data.user_id
                 }
-                console.log("data with the url ="+data_url);
+                data_url = JSON.stringify(data_url);
                 client.lpush(time2.toString(),data_url, (err,res) =>
                 {
                     if(err)
-                    console.log("failed to push data in the list");
+                    console.log("failed to push data in the list"+err);
+                    else
                     console.log("data inserted in list");
                 });
             }
@@ -139,13 +144,16 @@ app.post('/sub',function(req,res)
                     method : data.verb,
                     url : data.url,
                     header : data.Header,
-                    body : data.body
+                    body : data.body,
+                    user_id:data.user_id
                 }
-                console.log("data with the url ="+data_url);
+                data_url = JSON.stringify(data_url);
+                
                 client.lpush(time2.toString(),data_url, (err,res) =>
                 {
                     if(err)
                     console.log("failed to push data in the list");
+                    else
                     console.log("data inserted in list");
                 });
             }
@@ -193,11 +201,12 @@ cron.schedule('0,15,30,45 * * * *',() =>
                     body : ele.body,
                     user_id:ele.user_id
                 }
-                
+                data  =JSON.stringify(data);
                 client.lpush(ele.execution_time.toString(),data, (err,res) =>
                 {
                     if(err)
                     console.log("failed to push data in the list");
+                    else
                     console.log("data inserted in list");
                 });
             })
@@ -220,11 +229,12 @@ cron.schedule('* * * * *',() =>
     {
         result.forEach(ele =>
         {
+            ele = JSON.parse(ele);
             try{
                 request(ele,(err,res) =>
                 {
                     console.log("success "+res.statusCode);
-                    db.collection('clients').updateOne({user_id:ele.user_id},{$set : {"response":resp.statusCode}},function(err,result)
+                    db.collection('clients').updateOne({user_id:ele.user_id},{$set : {"response":res.statusCode}},function(err,result)
                     {
                         if(err)
                         console.log("failed to update response");
